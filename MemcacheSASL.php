@@ -6,6 +6,11 @@ class MemcacheSASL
     protected $_response_format = 'Cmagic/Copcode/nkeylength/Cextralength/Cdatatype/nstatus/Nbodylength/NOpaque/NCAS1/NCAS2';
 
     const OPT_COMPRESSION = -1001;
+    const OPT_CONNECT_TIMEOUT = -1002;
+    const OPT_SEND_TIMEOUT = -1003;
+    const OPT_RECV_TIMEOUT = -1004;
+
+    const RES_TIMEOUT = 31;
 
     const MEMC_VAL_TYPE_MASK = 0xf;
     const MEMC_VAL_IS_STRING = 0;
@@ -15,6 +20,10 @@ class MemcacheSASL
     const MEMC_VAL_IS_SERIALIZED = 4;
 
     const MEMC_VAL_COMPRESSED = 16; // 2^4
+
+    protected $_timeout_connect = 1;
+    protected $_timeout_send = 1500000;
+    protected $_timeout_recv = 1500000;
 
     protected function _build_request($data)
     {
@@ -65,13 +74,24 @@ class MemcacheSASL
     protected function _send($data)
     {
         $send_data = $this->_build_request($data);
+        stream_set_timeout($this->_fp, 0, $this->_timeout_send);
         fwrite($this->_fp, $send_data);
-        return $send_data;
+        $info = stream_get_meta_data($this->_fp);
+        if ($info['timed_out']) {
+          return FALSE;
+        }
+        return $info;
     }
 
     protected function _recv()
     {
+        stream_set_timeout($this->_fp, 0, $this->_timeout_recv);
         $data = fread($this->_fp, 24);
+        $info = stream_get_meta_data($this->_fp);
+        if ($info['timed_out']) {
+          return FALSE;
+        }
+
         $array = $this->_show_request($data);
         if ($array['bodylength']) {
             $bodylength = $array['bodylength'];
@@ -99,19 +119,33 @@ class MemcacheSASL
 
     public function listMechanisms()
     {
-        $this->_send(array('opcode' => 0x20));
+        $ok = $this->_send(array('opcode' => 0x20));
+        if (!$ok) {
+          throw new Exception('Connection timed out (write)');
+        }
+
         $data = $this->_recv();
+        if (!$data) {
+          throw new Exception('Connection timed out (read)');
+        }
         return explode(" ", $data['body']);
     }
 
     public function setSaslAuthData($user, $password)
     {
-        $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x21,
                     'key' => 'PLAIN',
                     'value' => '' . chr(0) . $user . chr(0) . $password
                     ));
+        if (!$ok) {
+          throw new Exception('Connection timed out (write)');
+        }
+
         $data = $this->_recv();
+        if (!$data) {
+          throw new Exception('Connection timed out (read)');
+        }
 
         if ($data['status']) {
             throw new Exception($data['body'], $data['status']);
@@ -120,7 +154,7 @@ class MemcacheSASL
 
     public function addServer($host, $port, $weight = 0)
     {
-        $this->_fp = stream_socket_client($host . ':' . $port);
+        $this->_fp = stream_socket_client($host . ':' . $port, $this->_timeout_connect);
     }
 
     public function addServers($servers)
@@ -147,11 +181,19 @@ class MemcacheSASL
 
     public function get($key)
     {   
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x00,
                     'key' => $key,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
+
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
+
         if (0 == $data['status']) {
             if ($data['extra'] & self::MEMC_VAL_COMPRESSED) {
                 $body = gzuncompress($data['body']);
@@ -223,13 +265,19 @@ class MemcacheSASL
         list($flag, $value) = $this->_processValue(0, $value);
 
         $extra = pack('NN', $flag, $expiration);
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x02,
                     'key' => $key,
                     'value' => $value,
                     'extra' => $extra,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -242,13 +290,19 @@ class MemcacheSASL
         list($flag, $value) = $this->_processValue(0, $value);
 
         $extra = pack('NN', $flag, $expiration);
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x01,
                     'key' => $key,
                     'value' => $value,
                     'extra' => $extra,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -258,11 +312,17 @@ class MemcacheSASL
 
     public function delete($key)
     {
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x04,
                     'key' => $key,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -275,13 +335,19 @@ class MemcacheSASL
         list($flag, $value) = $this->_processValue(0, $value);
 
         $extra = pack('NN', $flag, $expiration);
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x03,
                     'key' => $key,
                     'value' => $value,
                     'extra' => $extra,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -303,12 +369,18 @@ class MemcacheSASL
     {
         $initial_value = 0;
         $extra = pack('N2N2N', $this->_upper($offset), $this->_lower($offset), $this->_upper($initial_value), $this->_lower($initial_value), $expiration);
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x05,
                     'key' => $key,
                     'extra' => $extra,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -320,12 +392,18 @@ class MemcacheSASL
     {
         $initial_value = 0;
         $extra = pack('N2N2N', $this->_upper($offset), $this->_lower($offset), $this->_upper($initial_value), $this->_lower($initial_value), $expiration);
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x06,
                     'key' => $key,
                     'extra' => $extra,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -349,16 +427,22 @@ class MemcacheSASL
      */
     public function getStats($type = null)
     {
-        $this->_send(
+        $ok = $this->_send(
             array(
                 'opcode' => 0x10,
                 'key' => $type,
             )
         );
+        if (!$ok) {
+          return FALSE;
+        }
 
         $ret = array();
         while (true) {
             $item = $this->_recv();
+            if (!$item) {
+              return FALSE;
+            }
             if (empty($item['key'])) {
                 break;
             }
@@ -371,12 +455,18 @@ class MemcacheSASL
     {
         // TODO: If the Memcached::OPT_COMPRESSION is enabled, the operation
         // should failed.
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x0e,
                     'key' => $key,
                     'value' => $value,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -388,12 +478,18 @@ class MemcacheSASL
     {
         // TODO: If the Memcached::OPT_COMPRESSION is enabled, the operation
         // should failed.
-        $sent = $this->_send(array(
+        $ok = $this->_send(array(
                     'opcode' => 0x0f,
                     'key' => $key,
                     'value' => $value,
                     ));
+        if (!$ok) {
+          return FALSE;
+        }
         $data = $this->_recv();
+        if (!$data) {
+          return FALSE;
+        }
         if ($data['status'] == 0) {
             return TRUE;
         }
@@ -423,6 +519,15 @@ class MemcacheSASL
     public function setOption($key, $value)
     {
         $this->_options[$key] = $value;
+
+        if ($key === self::OPT_CONNECT_TIMEOUT) {
+            // option is in ms, but we only support second granularity.
+            $this->_timeout_connect = $value / 1000;
+        } else if ($key === self::OPT_SEND_TIMEOUT) {
+            $this->_timeout_send = $value;
+        } else if ($key === self::OPT_RECV_TIMEOUT) {
+            $this->_timeout_recv = $value;
+        }
     }
 
     /**
