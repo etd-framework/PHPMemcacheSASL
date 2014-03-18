@@ -73,22 +73,22 @@ class MemcacheSASL
     {
         $data = fread($this->_fp, 24);
         $array = $this->_show_request($data);
-	if ($array['bodylength']) {
-	    $bodylength = $array['bodylength'];
-	    $data = '';
-	    while ($bodylength > 0) {
-		$recv_data = fread($this->_fp, $bodylength);
-		$bodylength -= strlen($recv_data);
-		$data .= $recv_data;
-	    }
+        if ($array['bodylength']) {
+            $bodylength = $array['bodylength'];
+            $data = '';
+            while ($bodylength > 0) {
+                $recv_data = fread($this->_fp, $bodylength);
+                $bodylength -= strlen($recv_data);
+                $data .= $recv_data;
+            }
 
-	    if ($array['extralength']) {
-		$extra_unpacked = unpack('Nint', substr($data, 0, $array['extralength']));
-		$array['extra'] = $extra_unpacked['int'];
-	    }
-	    $array['key'] = substr($data, $array['extralength'], $array['keylength']);
-	    $array['body'] = substr($data, $array['extralength'] + $array['keylength']);
-	}
+            if ($array['extralength']) {
+                $extra_unpacked = unpack('Nint', substr($data, 0, $array['extralength']));
+                $array['extra'] = $extra_unpacked['int'];
+            }
+            $array['key'] = substr($data, $array['extralength'], $array['keylength']);
+            $array['body'] = substr($data, $array['extralength'] + $array['keylength']);
+        }
         return $array;
     }
 
@@ -151,8 +151,8 @@ class MemcacheSASL
                     'opcode' => 0x00,
                     'key' => $key,
                     ));
-	$data = $this->_recv();
-	if (0 == $data['status']) {
+        $data = $this->_recv();
+        if (0 == $data['status']) {
             if ($data['extra'] & self::MEMC_VAL_COMPRESSED) {
                 $body = gzuncompress($data['body']);
             } else {
@@ -213,7 +213,7 @@ class MemcacheSASL
 
         if (array_key_exists(self::OPT_COMPRESSION, $this->_options) and $this->_options[self::OPT_COMPRESSION]) {
             $flag |= self::MEMC_VAL_COMPRESSED;
-	    $value = gzcompress($value);
+            $value = gzcompress($value);
         }
         return array($flag, $value);
     }
@@ -422,7 +422,7 @@ class MemcacheSASL
 
     public function setOption($key, $value)
     {
-	$this->_options[$key] = $value;
+        $this->_options[$key] = $value;
     }
 
     /**
