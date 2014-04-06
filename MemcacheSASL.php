@@ -329,6 +329,25 @@ class MemcacheSASL
 
         return FALSE;
     }
+    
+    public function flush()
+    {
+        $ok = $sent = $this->_send(array(
+            'opcode' => 0x08
+        ));
+        if (!$ok) {
+            return FALSE;
+        }
+        $data = $this->_recv();
+        if (!$data) {
+            return FALSE;
+        }
+        if($data['status'] == 0){
+            return TRUE;
+        }
+
+        return FALSE;
+    }
 
     public function replace($key, $value, $expiration = 0)
     {
