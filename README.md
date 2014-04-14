@@ -10,6 +10,17 @@ documentation on the PHP Memcached class
 [here](http://php.net/manual/en/class.memcached.php). Not all features
 are supported at this time.
 
+## Changes vs. ronnywang Version
+
+This is a fork of the original code base by [Ronny
+Wang](https://github.com/ronnywang/PHPMemcacheSASL). We have made the
+following improvements:
+
+* Support for `flush`.
+* Support for timeouts on operations (connections and requests).
+* Fixed `increment` and `decrement` operations.
+* Support for the PHP Composer package manager.
+
 ## Licensing
 
 This library is BSD-licensed.
