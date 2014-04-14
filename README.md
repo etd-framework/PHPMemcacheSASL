@@ -40,7 +40,8 @@ Master [git repository](http://github.com/memcachier/PHPMemcacheSASL):
 ## Authors
 
 This library was written by [Ronny
-Wang](https://github.com/ronnywang/PHPMemcacheSASL). MemCachier has
-produced it's own fork for now that adds some extra functionality and
-fixes a few issues.
+Wang](https://github.com/ronnywang/PHPMemcacheSASL) and MemCachier.
+
+Ronny Wang wrote the initial version and bulk of the code, MemCachier
+later forked it to improve on the code base.
 
