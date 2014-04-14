@@ -384,47 +384,59 @@ class MemcacheSASL
         return $num % (2 << 32);
     }
 
-    public function increment($key, $offset = 1)
+    public function increment($key, $offset = 1, $initial_value = 0, $expiry = 0)
     {
-        $initial_value = 0;
-        $extra = pack('N2N2N', $this->_upper($offset), $this->_lower($offset), $this->_upper($initial_value), $this->_lower($initial_value), $expiration);
+        $extra = pack('N2N2N',
+            $this->_upper($offset),
+            $this->_lower($offset),
+            $this->_upper($initial_value),
+            $this->_lower($initial_value),
+            $expiry);
         $ok = $this->_send(array(
                     'opcode' => 0x05,
                     'key' => $key,
                     'extra' => $extra,
                     ));
         if (!$ok) {
-          return FALSE;
+            return FALSE;
         }
         $data = $this->_recv();
         if (!$data) {
-          return FALSE;
+            return FALSE;
         }
         if ($data['status'] == 0) {
-            return TRUE;
+            $n = unpack('N2', $data['body']);
+            $n = $n[1] << 32 | $n[2];
+            return $n;
         }
 
         return FALSE;
     }
 
-    public function decrement($key, $offset = 1)
+    public function decrement($key, $offset = 1, $initial_value = 0, $expiry = 0)
     {
-        $initial_value = 0;
-        $extra = pack('N2N2N', $this->_upper($offset), $this->_lower($offset), $this->_upper($initial_value), $this->_lower($initial_value), $expiration);
+        $extra = pack('N2N2N',
+            $this->_upper($offset),
+            $this->_lower($offset),
+            $this->_upper($initial_value),
+            $this->_lower($initial_value),
+            $expiry);
         $ok = $this->_send(array(
                     'opcode' => 0x06,
                     'key' => $key,
                     'extra' => $extra,
                     ));
         if (!$ok) {
-          return FALSE;
+            return FALSE;
         }
         $data = $this->_recv();
         if (!$data) {
-          return FALSE;
+            return FALSE;
         }
         if ($data['status'] == 0) {
-            return TRUE;
+            $n = unpack('N2', $data['body']);
+            $n = $n[1] << 32 | $n[2];
+            return $n;
         }
 
         return FALSE;
