@@ -154,7 +154,13 @@ class MemcacheSASL
 
     public function addServer($host, $port, $weight = 0)
     {
-        $this->_fp = stream_socket_client($host . ':' . $port, $this->_timeout_connect);
+      $server = stream_socket_client($host . ':' . $port, $this->_timeout_connect);
+      if ($server) {
+        $this->_fp = $server;
+        return TRUE;
+      } else {
+        return FALSE;
+      }
     }
 
     public function addServers($servers)
@@ -596,3 +602,4 @@ class MemcacheSASL
         );
     }
 }
+
