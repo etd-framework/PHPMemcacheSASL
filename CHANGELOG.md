@@ -1,3 +1,7 @@
+### 1.0.1 (2014-04-22)
+
+  * Fix use of MemCachier namespace.
+
 ### 1.0.0 (2014-04-22)
 
   * Added Autoload support for composer.

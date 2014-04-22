@@ -1,5 +1,7 @@
 <?php
 
+namespace MemCachier;
+
 class MemcacheSASL
 {
     protected $_request_format = 'CCnCCnNNNN';
@@ -121,12 +123,12 @@ class MemcacheSASL
     {
         $ok = $this->_send(array('opcode' => 0x20));
         if (!$ok) {
-          throw new Exception('Connection timed out (write)');
+          throw new \Exception('Connection timed out (write)');
         }
 
         $data = $this->_recv();
         if (!$data) {
-          throw new Exception('Connection timed out (read)');
+          throw new \Exception('Connection timed out (read)');
         }
         return explode(" ", $data['body']);
     }
@@ -139,16 +141,16 @@ class MemcacheSASL
                     'value' => '' . chr(0) . $user . chr(0) . $password
                     ));
         if (!$ok) {
-          throw new Exception('Connection timed out (write)');
+          throw new \Exception('Connection timed out (write)');
         }
 
         $data = $this->_recv();
         if (!$data) {
-          throw new Exception('Connection timed out (read)');
+          throw new \Exception('Connection timed out (read)');
         }
 
         if ($data['status']) {
-            throw new Exception($data['body'], $data['status']);
+            throw new \Exception($data['body'], $data['status']);
         }
     }
 
