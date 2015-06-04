@@ -1,3 +1,7 @@
+### 1.0.3 (2015-06-04)
+
+  * Increased connection and send/recv timeout defaults.
+
 ### 1.0.2 (2015-06-04)
 
   * Fixed `setOption` to return a bool indicating success.

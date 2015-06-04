@@ -39,9 +39,9 @@ class MemcacheSASL
 
     const MEMC_VAL_COMPRESSED = 16; // 2^4
 
-    protected $_timeout_connect = 1;
-    protected $_timeout_send = 1500000;
-    protected $_timeout_recv = 1500000;
+    protected $_timeout_connect = 3;
+    protected $_timeout_send = 2000000;
+    protected $_timeout_recv = 2000000;
 
     protected function _build_request($data)
     {
