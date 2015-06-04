@@ -10,6 +10,27 @@ documentation on the PHP Memcached class
 [here](http://php.net/manual/en/class.memcached.php). Not all features
 are supported at this time.
 
+## Usage example
+
+```php
+include('MemcacheSASL.php');
+
+/* connect to a server */
+$m = new MemcacheSASL;
+$m->addServer('127.0.0.1', '11211');
+
+/* set timeout to 1 second */
+$m->setOption(MemcacheSASL::OPT_SEND_TIMEOUT, 1000000);
+$m->setOption(MemcacheSASL::OPT_RECV_TIMEOUT, 1000000);
+
+/* set SASL username and password */
+$m->setSaslAuthData('username', 'password');
+
+/* perform some operations */
+var_dump($m->add('test', '123'));
+$m->delete('test');
+```
+
 ## Changes vs. ronnywang Version
 
 This is a fork of the original code base by [Ronny
@@ -20,6 +41,7 @@ following improvements:
 * Support for timeouts on operations (connections and requests).
 * Fixed `increment` and `decrement` operations.
 * Support for the PHP Composer package manager.
+* Support `setOptions` method.
 
 ## Licensing
 

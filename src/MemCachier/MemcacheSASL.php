@@ -2,14 +2,30 @@
 
 namespace MemCachier;
 
+/**
+ * Pure PHP Memcached client. We aim to be largely compatible with the PHP 
+ * memcached class, so that dictates the interface we provide.
+ */
 class MemcacheSASL
 {
     protected $_request_format = 'CCnCCnNNNN';
     protected $_response_format = 'Cmagic/Copcode/nkeylength/Cextralength/Cdatatype/nstatus/Nbodylength/NOpaque/NCAS1/NCAS2';
 
+    /* Enalbe or disable compression of values */
     const OPT_COMPRESSION = -1001;
+
+    /**
+     * Timeout units are a odd mixture, but we keep them this way for 
+     * php-memcached comptability.
+     */
+
+    /* Timeout for establishing connection (seconds) */
     const OPT_CONNECT_TIMEOUT = -1002;
+
+    /* Timeout for sending side (microseconds) */
     const OPT_SEND_TIMEOUT = -1003;
+
+    /* Timeout for receiving side (microseconds) */
     const OPT_RECV_TIMEOUT = -1004;
 
     const RES_TIMEOUT = 31;
@@ -225,7 +241,7 @@ class MemcacheSASL
                 break;
 
             case self::MEMC_VAL_IS_BOOL:
-                $body = $body ? true : false;
+                $body = $body ? TRUE : FALSE;
                 break;
 
             case self::MEMC_VAL_IS_SERIALIZED:
@@ -477,7 +493,7 @@ class MemcacheSASL
         }
 
         $ret = array();
-        while (true) {
+        while (TRUE) {
             $item = $this->_recv();
             if (!$item) {
               return FALSE;
@@ -555,18 +571,55 @@ class MemcacheSASL
 
     protected $_options = array();
 
+    /**
+     * This method sets the value of a memcache option. Currently supported 
+     * options are:
+     * - OPT_CONNECT_TIMEOUT: connection timeout in ms (rounded up to second 
+     * granularity).
+     * - OPT_SEND_TIMEOUT: timeout for sending data to memcache (ms).
+     * - OPT_RECV_TIMEOUT: timeout for receiving data from memcache (ms).
+     *
+     * @param int $key      One of 'OPT_CONNECT_TIMEOUT', 'OPT_SEND_TIMEOUT', 
+     *                      or 'OPT_RECV_TIMEOUT'.
+     * @param mixed $value  Value to set for the option.
+     * @access public
+     * @return bool         Returns TRUE on success or FALSE on failure.
+     */
     public function setOption($key, $value)
     {
         $this->_options[$key] = $value;
 
         if ($key === self::OPT_CONNECT_TIMEOUT) {
             // option is in ms, but we only support second granularity.
-            $this->_timeout_connect = $value / 1000;
+            $this->_timeout_connect = intval(ceil($value / 1000));
         } else if ($key === self::OPT_SEND_TIMEOUT) {
             $this->_timeout_send = $value;
         } else if ($key === self::OPT_RECV_TIMEOUT) {
             $this->_timeout_recv = $value;
+        } else {
+          // unsupported option
+          return FALSE;
         }
+
+        return TRUE;
+    }
+
+    /**
+     * MemcacheSASL::setOptions() is a variation of the 
+     * MemcacheSASL::setOption() that takes an array of options to be set.
+     *
+     * @param array An associative array of options where the key is the option 
+     *              to set and the value is the new value for the option.
+     * @access public
+     * @return bool Returns TRUE on success or FALSE on failure.
+     */
+    public function setOptions(array $opts)
+    {
+      foreach($opts as $k => $v) {
+        if (!setOption($k, $v)) {
+          return FALSE;
+        }
+      }
     }
 
     /**
