@@ -19,9 +19,9 @@ include('MemcacheSASL.php');
 $m = new MemcacheSASL;
 $m->addServer('127.0.0.1', '11211');
 
-/* set timeout to 1 second */
-$m->setOption(MemcacheSASL::OPT_SEND_TIMEOUT, 1000000);
-$m->setOption(MemcacheSASL::OPT_RECV_TIMEOUT, 1000000);
+/* set timeout to 2 second */
+$m->setOption(MemcacheSASL::OPT_SEND_TIMEOUT, 2000000);
+$m->setOption(MemcacheSASL::OPT_RECV_TIMEOUT, 2000000);
 
 /* set SASL username and password */
 $m->setSaslAuthData('username', 'password');
