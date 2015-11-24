@@ -633,10 +633,11 @@ class MemcacheSASL
      * session_start();
      * $_SESSION['hello'] = 'world';
      *
+     * @param int $expiration the time in seconds when the session should expire (0 for never).
      * @access public
      * @return void
      */
-    public function setSaveHandler()
+    public function setSaveHandler($expiration = 0)
     {
         session_set_save_handler(
             function($savePath, $sessionName){ // open
@@ -646,8 +647,8 @@ class MemcacheSASL
             function($sessionId){ // read
                 return $this->get($sessionId);
             },
-            function($sessionId, $data){ // write
-                return $this->set($sessionId, $data);
+            function($sessionId, $data) use($expiration) { // write
+                return $this->set($sessionId, $data, $expiration);
             },
             function($sessionId){ // destroy
                 $this->delete($sessionId);
