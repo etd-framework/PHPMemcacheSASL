@@ -35,7 +35,7 @@ Here is a basic setup to log to a file and to firephp on the DEBUG level:
 ```php
 <?php
 
-use Memcachier\MemcacheSASL;
+use MemCachier\MemcacheSASL;
 
 // connect to your memcache server
 $m = new MemcacheSASL;
